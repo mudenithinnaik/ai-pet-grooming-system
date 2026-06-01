@@ -92,7 +92,7 @@ ai-pet-grooming-system/
 git clone https://github.com/mudenithinnaik/ai-pet-grooming-system.git
 cd ai-pet-grooming-system
 pip install -r requirements.txt
-cp .env.example .env        # Add your API keys
+cp .env.example .env        
 python main.py
 ```
 
