@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Pet Grooming System</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f9fa;color:#1a1a1a;min-height:100vh}
+    .container{max-width:760px;margin:0 auto;padding:2rem 1rem}
+    header{text-align:center;margin-bottom:2.5rem}
+    header h1{font-size:28px;font-weight:600;margin-bottom:8px}
+    header p{color:#666;font-size:15px}
+    .card{background:#fff;border-radius:16px;border:1px solid #e5e7eb;padding:1.5rem;margin-bottom:1.5rem}
+    .upload-zone{border:2px dashed #d1d5db;border-radius:12px;padding:3rem 1.5rem;text-align:center;cursor:pointer;transition:all 0.2s}
+    .upload-zone:hover{border-color:#6366f1;background:#f5f3ff}
+    .upload-zone i{font-size:48px;color:#9ca3af;display:block;margin-bottom:12px}
+    .preview-wrap{position:relative;border-radius:12px;overflow:hidden}
+    .preview-wrap img{width:100%;max-height:350px;object-fit:cover;display:block}
+    .change-btn{position:absolute;top:12px;right:12px;background:rgba(255,255,255,0.95);border:1px solid #e5e7eb;border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;font-weight:500}
+    .analyze-btn{width:100%;margin-top:1rem;padding:14px;font-size:16px;font-weight:600;background:#1a1a1a;color:#fff;border:none;border-radius:12px;cursor:pointer;transition:opacity 0.2s}
+    .analyze-btn:hover{opacity:0.85}
+    .analyze-btn:disabled{opacity:0.5;cursor:not-allowed}
+    .spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:-4px;margin-right:8px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:1.5rem}
+    .metric{background:#f9fafb;border-radius:10px;padding:14px}
+    .metric .label{font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px}
+    .metric .value{font-size:20px;font-weight:600}
+    .metric .sub{font-size:12px;color:#6b7280;margin-top:2px}
+    .section-label{font-size:13px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px}
+    .rec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:1.5rem}
+    .rec{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px}
+    .rec i{font-size:22px;color:#6b7280;display:block;margin-bottom:8px}
+    .rec .rec-label{font-size:11px;color:#9ca3af;margin-bottom:4px}
+    .rec .rec-value{font-size:14px;font-weight:500}
+    .notes{background:#f9fafb;border-radius:10px;padding:14px 16px;font-size:14px;color:#4b5563;line-height:1.7}
+    .error{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;border-radius:10px;padding:12px 16px;font-size:14px;margin-top:1rem}
+    #results{display:none}
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🐾 AI Pet Grooming System</h1>
+    <p>Upload a dog photo — AI detects size, coat type, and recommends the perfect grooming routine</p>
+  </header>
+  <div class="card">
+    <div id="upload-area">
+      <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <i class="ti ti-photo-up"></i>
+        <h3 style="font-size:16px;font-weight:500;margin-bottom:6px;">Drop your dog photo here</h3>
+        <p style="font-size:13px;color:#9ca3af;">or click to browse · JPG, PNG, WEBP up to 10MB</p>
+        <input type="file" id="file-input" accept="image/*" style="display:none">
+      </div>
+    </div>
+    <div id="preview-area" style="display:none">
+      <div class="preview-wrap">
+        <img id="preview-img" src="" alt="Dog photo">
+        <button class="change-btn" onclick="resetApp()">↺ Change photo</button>
+      </div>
+      <button class="analyze-btn" id="analyze-btn" onclick="analyzeImage()">Analyze Dog</button>
+    </div>
+    <div id="error-area"></div>
+  </div>
+  <div id="results" class="card">
+    <div class="metrics-grid">
+      <div class="metric"><div class="label">Breed</div><div class="value" id="r-breed" style="font-size:15px;"></div></div>
+      <div class="metric"><div class="label">Size</div><div class="value" id="r-size"></div><div class="sub" id="r-weight"></div></div>
+      <div class="metric"><div class="label">Coat</div><div class="value" id="r-coat" style="font-size:15px;"></div><div class="sub" id="r-condition"></div></div>
+    </div>
+    <div class="section-label">Size analysis</div>
+    <div class="notes" id="r-size-reason" style="margin-bottom:1.5rem;"></div>
+    <div class="section-label">Grooming recommendations</div>
+    <div class="rec-grid">
+      <div class="rec"><i class="ti ti-droplet"></i><div class="rec-label">Wash temp</div><div class="rec-value" id="r-temp"></div></div>
+      <div class="rec"><i class="ti ti-clock"></i><div class="rec-label">Duration</div><div class="rec-value" id="r-duration"></div></div>
+      <div class="rec"><i class="ti ti-bottle"></i><div class="rec-label">Shampoo</div><div class="rec-value" id="r-shampoo"></div></div>
+      <div class="rec"><i class="ti ti-tool"></i><div class="rec-label">Brush</div><div class="rec-value" id="r-brush"></div></div>
+      <div class="rec"><i class="ti ti-calendar"></i><div class="rec-label">Frequency</div><div class="rec-value" id="r-freq"></div></div>
+    </div>
+    <div class="section-label">Special notes</div>
+    <div class="notes" id="r-notes"></div>
+  </div>
+</div>
+<script>
+let imageFile=null;
+const fileInput=document.getElementById('file-input');
+const dropZone=document.getElementById('drop-zone');
+fileInput.addEventListener('change',e=>{if(e.target.files[0])handleFile(e.target.files[0])});
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.style.borderColor='#6366f1'});
+dropZone.addEventListener('dragleave',()=>dropZone.style.borderColor='');
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.style.borderColor='';if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0])});
+function handleFile(file){imageFile=file;document.getElementById('preview-img').src=URL.createObjectURL(file);document.getElementById('upload-area').style.display='none';document.getElementById('preview-area').style.display='block';document.getElementById('results').style.display='none';document.getElementById('error-area').innerHTML=''}
+function resetApp(){imageFile=null;fileInput.value='';document.getElementById('upload-area').style.display='block';document.getElementById('preview-area').style.display='none';document.getElementById('results').style.display='none';document.getElementById('error-area').innerHTML=''}
+async function analyzeImage(){const btn=document.getElementById('analyze-btn');btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Analyzing...';document.getElementById('error-area').innerHTML='';const formData=new FormData();formData.append('file',imageFile);try{const res=await fetch('/analyze',{method:'POST',body:formData});if(!res.ok){const err=await res.json();throw new Error(err.detail||'Analysis failed')}const data=await res.json();renderResults(data)}catch(e){document.getElementById('error-area').innerHTML=`<div class="error">⚠️ ${e.message}</div>`}btn.disabled=false;btn.innerHTML='Analyze Again'}
+function renderResults(r){document.getElementById('r-breed').textContent=r.breed_guess;document.getElementById('r-size').textContent=r.size;document.getElementById('r-weight').textContent=r.weight_estimate;document.getElementById('r-coat').textContent=r.coat_type;document.getElementById('r-condition').textContent=r.coat_condition;document.getElementById('r-size-reason').textContent=r.size_reason;document.getElementById('r-temp').textContent=r.wash_temp;document.getElementById('r-duration').textContent=r.wash_duration;document.getElementById('r-shampoo').textContent=r.shampoo_type;document.getElementById('r-brush').textContent=r.brush_type;document.getElementById('r-freq').textContent=r.grooming_frequency;document.getElementById('r-notes').textContent=r.special_notes;document.getElementById('results').style.display='block';document.getElementById('results').scrollIntoView({behavior:'smooth'})}
+</script>
+</body>
+</html>
